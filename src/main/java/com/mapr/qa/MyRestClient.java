@@ -10,7 +10,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.TimeUnit;
 
-public class RestClient {
+public class MyRestClient {
 
     public LoginStats login(String host) {
         LoginStats loginStats;
@@ -24,7 +24,7 @@ public class RestClient {
         Response response = null;
         try {
             response = client.newCall(request).execute();
-            loginStats = new LoginStats(RandomStringUtils.randomAlphanumeric(20), response.code(), System.currentTimeMillis() / 1000);
+            loginStats = new LoginStats(System.currentTimeMillis() / 1000, response.code());
         } catch (IOException e) {
             e.printStackTrace();
             loginStats = null;

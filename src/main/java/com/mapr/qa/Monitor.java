@@ -2,8 +2,19 @@ package com.mapr.qa;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.google.gson.Gson;
 import com.mapr.db.MapRDB;
 import com.mapr.db.Table;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.http.HttpHost;
+import org.elasticsearch.action.DocWriteResponse;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.json.JSONObject;
 import org.ojai.Document;
 import org.ojai.store.Connection;
 import org.ojai.store.DocumentStore;
@@ -17,6 +28,7 @@ import static java.lang.System.exit;
 public class Monitor {
     static String TABLE_PATH = "/user/mapr/mcs/uptime";
     //static int POLLING_INTERVAL = 60000; //1 min in miliseconds
+    static final String INDEX = "mcsmonitor";
 
     @Parameter(names = "-host", description = "hostname of apiserver to monitor", required = true)
     static String HOST;
@@ -24,8 +36,8 @@ public class Monitor {
     @Parameter(names = "-interval", description = "how often to check apiserver", required = true)
     static long POLLING_INTERVAL;
 
-    private  LoginStats getLoginStatus(String host) {
-        RestClient restClient = new RestClient();
+    private LoginStats getLoginStatus(String host) {
+        MyRestClient restClient = new MyRestClient();
         return restClient.login(host);
 
     }
@@ -42,25 +54,37 @@ public class Monitor {
             exit(1);
         }
 
-        final Connection connection = DriverManager.getConnection("ojai:mapr:");
-        if (connection == null) {
-            System.err.println("failed to connect to ojai");
+        if (POLLING_INTERVAL == 0) {
+            System.err.println("Please provide a polling interval via -interval");
             exit(1);
         }
-        DocumentStore store = connection.getStore(TABLE_PATH);
-        if (store == null)
-            store = connection.createStore(TABLE_PATH);
+
+        // initialize index
+        RestHighLevelClient esclient = new RestHighLevelClient(
+                RestClient.builder(
+                        new HttpHost("10.10.100.104", 9200, "http"))
+                        .setRequestConfigCallback(requestConfigBuilder ->
+                                requestConfigBuilder
+                                        .setConnectTimeout(5000)
+                                        .setSocketTimeout(30000)));
+
 
         int retry = 0;
         boolean emailSent = false;
-        long timeSent = System.currentTimeMillis() / 1000;;
+        long timeSent = System.currentTimeMillis() / 1000L;
+
         try {
             while (true) {
                 LoginStats loginStats = m.getLoginStatus(HOST);
-                Document status = connection.newDocument(loginStats);
-                System.out.println("\t inserting " + status.getId());
-                // insert the OJAI Document into the DocumentStore
-                store.insertOrReplace(status);
+                //write to elasticsearch
+                String id = RandomStringUtils.randomAlphanumeric(20);
+                IndexRequest indexRequest = new IndexRequest(INDEX, "_doc", id);
+                String jstring = new Gson().toJson(loginStats);
+                IndexResponse response = esclient.index(indexRequest.source(jstring, XContentType.JSON), RequestOptions.DEFAULT);
+                if (DocWriteResponse.Result.CREATED != response.getResult())
+                    System.out.println("index creation failed for doc " + jstring + " error:" + response.getResult());
+                else
+                    System.out.println("index creation succeeded for doc " + jstring);
 
                 if (retry < 20) {
                     if (loginStats.statusCode != 200 && loginStats.statusCode != 201) {
@@ -75,16 +99,16 @@ public class Monitor {
                         continue;
                     }
 
-                    long now = System.currentTimeMillis() / 1000;
+                    long now = System.currentTimeMillis() / 1000L;
                     // send email every 4 hours and may be trigger a redeploy job
                     if (!emailSent) {
                         // send an email
                         emailSent = true;
-                        timeSent = System.currentTimeMillis() / 1000;
+                        timeSent = System.currentTimeMillis() / 1000L;
                         System.out.println(HOST + " is down, please check");
                     } else {
                         if ((now - timeSent) > 4 * 3600) {
-                            timeSent = System.currentTimeMillis() / 1000;
+                            timeSent = System.currentTimeMillis() / 1000L;
                             System.out.println(HOST + " is down, please check");
                         }
                     }
@@ -95,7 +119,7 @@ public class Monitor {
 
             }
         } finally {
-            connection.close();
+            esclient.close();
         }
     }
 

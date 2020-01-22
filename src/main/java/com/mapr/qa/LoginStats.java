@@ -10,8 +10,7 @@ import java.util.Date;
 @AllArgsConstructor
 public class LoginStats {
 
-    String _id;
-    int statusCode;
     long time;
+    int statusCode;
 
 }
