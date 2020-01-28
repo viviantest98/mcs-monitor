@@ -12,5 +12,6 @@ public class LoginStats {
 
     long time;
     int statusCode;
+    String msg;
 
 }

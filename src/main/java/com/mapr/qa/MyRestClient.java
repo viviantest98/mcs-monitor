@@ -5,6 +5,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 
 import javax.net.ssl.*;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
@@ -12,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 public class MyRestClient {
 
-    public LoginStats login(String host) {
+    public LoginStats login(String host) throws Exception{
         LoginStats loginStats;
         Request request = new Request.Builder()
                 .url("https://" + host + ":8443/login/")
@@ -24,12 +25,13 @@ public class MyRestClient {
         Response response = null;
         try {
             response = client.newCall(request).execute();
-            loginStats = new LoginStats(System.currentTimeMillis() / 1000, response.code());
-        } catch (IOException e) {
-            e.printStackTrace();
-            loginStats = null;
+            loginStats = new LoginStats(System.currentTimeMillis() / 1000L, response.code(), response.message());
+        } catch (Exception e) {
+            //e.printStackTrace();
+            loginStats = new LoginStats(System.currentTimeMillis() / 1000L, 150, e.getMessage());;
         } finally {
-            response.close();
+            if (response != null)
+                response.close();
         }
         return loginStats;
     }
