@@ -21,10 +21,22 @@ To get usage:
     ```
     java -cp target/mcs-monitor-1.0-SNAPSHOT-jar-with-dependencies.jar com.mapr.qa.Monitor --help 
     ```
+    Usage: <main class> [options]
+      Options:
+        -help
+          display this help
+      * -email
+          gmail for receiving alert
+        -email-password
+          your gmail account password
+      * -host
+          hostname of apiserver to monitor
+        -reset
+          passing this flag to reset monitoring data if needed
     
 To run it:
     ```
-    java -cp target/mcs-monitor-1.0-SNAPSHOT-jar-with-dependencies.jar com.mapr.qa.Monitor -host 10.10.88.60 -email vsummers98@gmail.com  -email-password
+    java -cp target/mcs-monitor-1.0-SNAPSHOT-jar-with-dependencies.jar com.mapr.qa.Monitor -host 10.10.88.60 -email your-gmail  -email-password
     enter your password at the prompt.
 
     ```

@@ -17,18 +17,21 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Console;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import static java.lang.System.exit;
 
 
 public class Monitor {
     static Logger logger = LoggerFactory.getLogger(Monitor.class);
-    static String TABLE_PATH = "/user/mapr/mcs/uptime";
-    //static int POLLING_INTERVAL = 60000; //1 min in miliseconds
-    static final String INDEX = "mcsmonitor";
 
     @Parameter(names = "-host", description = "hostname of apiserver to monitor", required = true)
     static String host;
+
+    @Parameter(names = "-reset", description = "passing this flag to reset monitoring data at beginning of weekly run", required = false)
+    static boolean reset = false;
+
 
     @Parameter(names = "-email", description = "gmail for receiving alert", required = true)
     static String to;
@@ -37,9 +40,9 @@ public class Monitor {
     static String password = null;
 
     @Parameter(names = "-interval", description = "how often to check apiserver", hidden = true)
-    static long polling_interval = 10000;
+    static long polling_interval = 60000;
 
-    @Parameter(names = "--help", help = true)
+    @Parameter(names = "-help", description = "display this help", help = true)
     static boolean help = false;
 
     private LoginStats getLoginStatus(String host) throws Exception {
@@ -60,19 +63,14 @@ public class Monitor {
             exit(0);
         }
 
+        if (reset) {
+            ES.reset();
+            exit(0);
+        }
+
         System.out.println("monitoring " + host + " ...");
         logger.info("monitoring apiserver on " + host);
         logger.info("alert email is set to " + to);
-
-        // initialize index
-        RestHighLevelClient esclient = new RestHighLevelClient(
-                RestClient.builder(
-                        new HttpHost("10.10.100.104", 9200, "http"))
-                        .setRequestConfigCallback(requestConfigBuilder ->
-                                requestConfigBuilder
-                                        .setConnectTimeout(5000)
-                                        .setSocketTimeout(30000)));
-
 
         int retry = 0;
         boolean emailSent = false;
@@ -81,16 +79,7 @@ public class Monitor {
         try {
             while (true) {
                 LoginStats loginStats = m.getLoginStatus(host);
-                //write to elasticsearch
-                String id = RandomStringUtils.randomAlphanumeric(20);
-                IndexRequest indexRequest = new IndexRequest(INDEX, "_doc", id);
-                String jstring = new Gson().toJson(loginStats);
-                IndexResponse response = esclient.index(indexRequest.source(jstring, XContentType.JSON), RequestOptions.DEFAULT);
-                if (DocWriteResponse.Result.CREATED != response.getResult()) {
-                    logger.error("index creation failed for doc " + jstring + " error:" + response.getResult());
-                    new Exception("index creation failed for doc " + jstring + " error:" + response.getResult());
-                } else
-                    logger.info("index creation succeeded for doc " + jstring);
+                ES.insert(loginStats);
 
                 // retry for 20 min
                 if (retry < 20) {
@@ -109,17 +98,18 @@ public class Monitor {
                     long now = System.currentTimeMillis() / 1000L;
                     // send email every 4 hours
                     if (!emailSent) {
-                        // todo send an email
-                        logger.info("sending email " + loginStats.getMsg());
                         SendMail.sendmail(to, password, loginStats.getMsg());
                         emailSent = true;
                         timeSent = System.currentTimeMillis() / 1000L;
+                        Date date = new Date(timeSent);
+                        logger.info(date.toString() + " email sent " + loginStats.getMsg());
                     } else {
                         // send email every 4 hours
                         if ((now - timeSent) > 4 * 3600) {
-                            logger.info("sending email " + loginStats.getMsg());
                             SendMail.sendmail(to, password, loginStats.getMsg());
                             timeSent = System.currentTimeMillis() / 1000L;
+                            Date date = new Date(timeSent);
+                            logger.info(date.toString() + " email sent" + loginStats.getMsg());
                         }
                     }
                 }
@@ -128,7 +118,7 @@ public class Monitor {
 
             }
         } finally {
-            esclient.close();
+            ES.close();
         }
     }
 
