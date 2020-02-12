@@ -14,7 +14,7 @@
         </discriminator>
         <sift>
             <appender name="FILE-${logname}" class="ch.qos.logback.core.rolling.RollingFileAppender">
-                <file>target/${logname}.log</file>
+                <file>${logname}.log</file>
                 <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
                     <FileNamePattern>target/${logname}.%i.log</FileNamePattern>
                     <MinIndex>1</MinIndex>

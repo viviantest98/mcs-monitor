@@ -41,5 +41,9 @@ To run it:
 
     ```
 
+## Docker container way
+    $ ./buildImage.sh to build docker image
+    $ docker run mcsmonitor -h
+    $ docker run mcsmonitor -host 10.10.88.60 
 
 

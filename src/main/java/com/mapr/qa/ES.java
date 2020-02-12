@@ -53,8 +53,7 @@ public class ES {
         if (DocWriteResponse.Result.CREATED != response.getResult()) {
             logger.error("index creation failed for doc " + jstring + " error:" + response.getResult());
             new Exception("index creation failed for doc " + jstring + " error:" + response.getResult());
-        } else
-            logger.info("index creation succeeded for doc " + jstring);
+        }
     }
 
     static void close() throws Exception {

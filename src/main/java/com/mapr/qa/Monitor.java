@@ -33,10 +33,10 @@ public class Monitor {
     static boolean reset = false;
 
 
-    @Parameter(names = "-email", description = "gmail for receiving alert", required = true)
+    @Parameter(names = "-email", description = "gmail for receiving alert", required = false)
     static String to;
 
-    @Parameter(names = "-email-password", description = "your gmail account password", password = true)
+    @Parameter(names = "-email-password", description = "your gmail account password", password = false)
     static String password = null;
 
     @Parameter(names = "-interval", description = "how often to check apiserver", hidden = true)
