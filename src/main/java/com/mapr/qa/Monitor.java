@@ -26,17 +26,23 @@ import static java.lang.System.exit;
 public class Monitor {
     static Logger logger = LoggerFactory.getLogger(Monitor.class);
 
-    @Parameter(names = "-host", description = "hostname of apiserver to monitor", required = true)
-    static String host;
+    @Parameter(names = "-mcshost", description = "hostname of apiserver to monitor", required = true)
+    static String mcshost;
+
+    @Parameter(names = "-eshost", description = "ip of the elasticsearch host", required = true)
+    static String eshost;
+
+    @Parameter(names = "-esport", description = "port of the elasticsearch host", required = false)
+    static int port=9200;
 
     @Parameter(names = "-reset", description = "passing this flag to reset monitoring data at beginning of weekly run", required = false)
     static boolean reset = false;
 
 
-    @Parameter(names = "-email", description = "gmail for receiving alert", required = false)
+    @Parameter(names = "-email", description = "gmail for receiving alert", required = true)
     static String to;
 
-    @Parameter(names = "-email-password", description = "your gmail account password", password = false)
+    @Parameter(names = "-email-password", description = "your gmail account password", password = true)
     static String password = null;
 
     @Parameter(names = "-interval", description = "how often to check apiserver", hidden = true)
@@ -62,14 +68,16 @@ public class Monitor {
             jCommander.usage();
             exit(0);
         }
+        ES.init(eshost, port);
 
         if (reset) {
             ES.reset();
             exit(0);
         }
 
-        System.out.println("monitoring " + host + " ...");
-        logger.info("monitoring apiserver on " + host);
+        System.out.println("monitoring " + mcshost + " ...");
+        logger.info("monitoring apiserver on " + mcshost);
+        logger.info("elasticsearch host: " + eshost + " esport:" + port);
         logger.info("alert email is set to " + to);
 
         int retry = 0;
@@ -78,7 +86,7 @@ public class Monitor {
 
         try {
             while (true) {
-                LoginStats loginStats = m.getLoginStatus(host);
+                LoginStats loginStats = m.getLoginStatus(mcshost);
                 ES.insert(loginStats);
 
                 // retry for 20 min
@@ -117,6 +125,8 @@ public class Monitor {
                 Thread.sleep(polling_interval);
 
             }
+        } catch (Exception ex) {
+            System.out.println(ex.getMessage());
         } finally {
             ES.close();
         }

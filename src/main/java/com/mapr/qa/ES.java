@@ -20,12 +20,18 @@ public class ES {
     static final String INDEX = "mcsmonitor";
     static private RestHighLevelClient esclient;
     static Logger logger = LoggerFactory.getLogger(ES.class);
+    static String ehost;
+    static int eport;
 
+    static void init(String eshost, int port) {
+        ehost = eshost;
+        eport = port;
+    }
     static void getInstance() {
         // initialize index
         esclient = new RestHighLevelClient(
                 RestClient.builder(
-                        new HttpHost("10.10.100.104", 9200, "http"))
+                        new HttpHost(ehost, eport, "http"))
                         .setRequestConfigCallback(requestConfigBuilder ->
                                 requestConfigBuilder
                                         .setConnectTimeout(5000)
@@ -47,11 +53,13 @@ public class ES {
         String id = RandomStringUtils.randomAlphanumeric(20);
         IndexRequest indexRequest = new IndexRequest(INDEX, "_doc", id);
         String jstring = new Gson().toJson(loginStats);
-        if (esclient == null)
+        if (esclient == null) {
             getInstance();
+        }
+
         IndexResponse response = esclient.index(indexRequest.source(jstring, XContentType.JSON), RequestOptions.DEFAULT);
         if (DocWriteResponse.Result.CREATED != response.getResult()) {
-            logger.error("index creation failed for doc " + jstring + " error:" + response.getResult());
+            logger.info("index creation failed for doc " + jstring + " error:" + response.getResult());
             new Exception("index creation failed for doc " + jstring + " error:" + response.getResult());
         }
     }

@@ -5,16 +5,15 @@ usage() {
   echo "
     $0
    -help
-     display this help
-   -email
-     gmail for receiving alert
-   -email-password
-     your gmail account password
-  -host
-     hostname of apiserver to monitor
-   -reset
-     passing this flag to reset monitoring data if needed to clear out unneeded data and limit the disk usage.
-
+     display this help. Run this script on a node where you want to setup the elasticsearch and kibana containers. Docker that support docker-compose 3.x  is required.
+   -mcshost
+     mcs server to monitor
+   -eshost
+     elasticsearch ip to index into
+   -esport
+     host esport to map to from container
+   -kibana_port
+     kibana port to map to from container
    "
    exit 1
 }
@@ -22,8 +21,10 @@ usage() {
 while [ $# -gt 0 ]
 do
   case $1 in
-  -host)      host=$2 ;;
-  -email)       email=$2 ;;
+  -mcshost)    mcshost=$2 ;;
+  -eshost)      eshost=$2 ;;
+  -esport)      esport=$2 ;;
+  -kibana_port)       kport=$2 ;;
   *)
      echo "****" Bad argument:  $1
      usage
@@ -32,4 +33,4 @@ do
   shift 2
 done
 
-java -cp target/mcs-monitor-1.0-SNAPSHOT-jar-with-dependencies.jar com.mapr.qa.Monitor -host ${host}
+java -jar mcs-monitor-1.0-SNAPSHOT-jar-with-dependencies.jar com.mapr.qa.Monitor -mcshost ${mcshost} -eshost ${eshost} -esport ${esport} -email vsummers98@gmail.com -email-password

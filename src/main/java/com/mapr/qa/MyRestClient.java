@@ -28,7 +28,7 @@ public class MyRestClient {
             loginStats = new LoginStats(System.currentTimeMillis() / 1000L, response.code(), response.message());
         } catch (Exception e) {
             //e.printStackTrace();
-            loginStats = new LoginStats(System.currentTimeMillis() / 1000L, 150, e.getMessage());;
+            loginStats = new LoginStats(System.currentTimeMillis() / 1000L, 0, e.getMessage());;
         } finally {
             if (response != null)
                 response.close();
