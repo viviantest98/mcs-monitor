@@ -1,8 +1,8 @@
-# API Server Monitor
+# Server Monitor
 
 ## How it works
 
-The application will poll the apiserver running on dev-monet every 1 minute and log the status to elasticsearch which can be visualized and generate report 
+The application will poll a server running on a node every 1 minute and log the status to elasticsearch which can be visualized and generate report 
 later on so we can see the uptime and downtime. Also it will sends an alert email so someone can address the issue. The elasticsearch is installed and configured
 on a host and index mapping is created prior to run the application. 
 
@@ -18,7 +18,7 @@ We do not want to delete the index because we would have to build the dashboard 
 
 ## point to existing kibana and elasticsearch host that has the indexes created
     to create the index, run this in the kibana tool UI:
-    PUT /mcsmonitor
+    PUT /monitor
     {
       "mappings": {
         
@@ -41,37 +41,19 @@ To get usage:
     ```
     java -cp target/mcs-monitor-1.0-SNAPSHOT-jar-with-dependencies.jar com.mapr.qa.Monitor --help 
     ```
-    Usage: <main class> [options]
-      Options:
-     -email
-      gmail for receiving alert
-     -email-password
-      your gmail account password
-     -eshost
-      ip of the elasticsearch host
-     -esport
-      port of the elasticsearch host
-      Default: 9200
-     -help
-      display this help
-     -mcshost
-      hostname of apiserver to monitor
-     -reset
-      passing this flag to reset monitoring data at beginning of weekly run
-      Default: false
     
 To run it:
     ```
-    java -cp target/mcs-monitor-1.0-SNAPSHOT-jar-with-dependencies.jar com.mapr.qa.Monitor -eshost 10.10.100.104 -mcshost 10.10.88.60 -email your-gmail  -email-password
+    java -cp target/monitor-1.0-SNAPSHOT-jar-with-dependencies.jar com.mapr.qa.Monitor -eshost <ESHOST> -mcshost <HOST_IP> -email your-gmail  -email-password
     enter your password at the prompt.
 
     ```
 
 ## Docker container way, run this on a linux server 
     prerequists: docker that support docker-compose 3.x and git
-    git clone https://github.com/mapr/private-mcs-tools
+    check out the source
 
     ./deployAndRun.sh -h
-    ./deployAndRun.sh -mcshost 10.10.88.60 -eshost 10.10.30.150 -esport 9292 -kibana_port 5611
+    ./deployAndRun.sh -mcshost <HOST_IP> -eshost <ESHOST> -esport 9292 -kibana_port 5611
 
 
