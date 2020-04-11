@@ -1,6 +1,6 @@
 # Server Monitor
 
-## How it works
+## How it  works
 
 The application will poll a server running on a node every 1 minute and log the status to elasticsearch which can be visualized and generate report 
 later on so we can see the uptime and downtime. Also it will sends an alert email so someone can address the issue. The elasticsearch is installed and configured
